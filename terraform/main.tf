@@ -67,7 +67,7 @@ resource "aws_lambda_function" "clock" {
   role          = aws_iam_role.lambda.arn
   package_type  = "Image"
   image_uri     = local.image
-  architectures = ["x86_64"]
+  architectures = ["arm64"]
   memory_size   = 2048
   timeout       = 120
 

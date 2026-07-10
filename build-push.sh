@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# NOTE: on Apple Silicon, `docker build --platform linux/amd64` can segfault under
-# QEMU emulation. If that happens, build via a native amd64 VM (e.g. colima with an
-# x86_64 profile) or a `docker buildx` builder configured for linux/amd64.
+# Build for arm64 (Lambda Graviton). On an Apple Silicon / arm64 Docker host this
+# builds NATIVELY — no QEMU emulation, so the aws-lambda-ric native compile is
+# reliable (amd64 builds segfault under emulation). Lambda must be architectures=["arm64"].
 
 TAG="${1:?usage: ./build-push.sh <tag, e.g. v1>}"
 REGION="ap-southeast-3"
@@ -23,7 +23,7 @@ aws ecr get-login-password --region "$REGION" \
 
 # --provenance=false: skip buildx attestation manifests so each push is a single
 # image (keeps the ECR repo clean and the keep-2 lifecycle policy predictable).
-docker build --provenance=false --platform linux/amd64 -t "${REPO}:${TAG}" .
+docker build --provenance=false --platform linux/arm64 -t "${REPO}:${TAG}" .
 docker tag "${REPO}:${TAG}" "${ECR}/${REPO}:${TAG}"
 docker push "${ECR}/${REPO}:${TAG}"
 
