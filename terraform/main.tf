@@ -48,6 +48,7 @@ data "aws_iam_policy_document" "lambda_assume" {
 
 resource "aws_iam_role" "lambda" {
   name               = "${local.name}-lambda-role"
+  description        = "Execution role for the talenta-tidak-bertalenta clock-in/clock-out Lambda functions"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
   tags               = { Resource = "iam" }
 }
@@ -62,6 +63,7 @@ resource "aws_lambda_function" "clock" {
   for_each = toset(["clock-in", "clock-out"])
 
   function_name = "${local.name}-${each.key}"
+  description   = "Talenta HR attendance ${each.key} — stealth Playwright browser running in ap-southeast-3 (Jakarta IP)"
   role          = aws_iam_role.lambda.arn
   package_type  = "Image"
   image_uri     = local.image
@@ -97,6 +99,7 @@ data "aws_iam_policy_document" "scheduler_assume" {
 
 resource "aws_iam_role" "scheduler" {
   name               = "${local.name}-scheduler-role"
+  description        = "Role assumed by EventBridge Scheduler to invoke the attendance Lambda functions"
   assume_role_policy = data.aws_iam_policy_document.scheduler_assume.json
   tags               = { Resource = "iam" }
 }
@@ -116,7 +119,8 @@ resource "aws_iam_role_policy" "scheduler_invoke" {
 
 # --- Schedules (cron in Asia/Jakarta; aws_scheduler_schedule has no tags arg) ---
 resource "aws_scheduler_schedule" "clock_in" {
-  name = "${local.name}-sched-in"
+  name        = "${local.name}-sched-in"
+  description = "Trigger Talenta clock-in at 09:00 WIB, Monday-Friday"
 
   flexible_time_window {
     mode = "OFF"
@@ -133,7 +137,8 @@ resource "aws_scheduler_schedule" "clock_in" {
 }
 
 resource "aws_scheduler_schedule" "clock_out" {
-  name = "${local.name}-sched-out"
+  name        = "${local.name}-sched-out"
+  description = "Trigger Talenta clock-out at 18:00 WIB, Monday-Friday"
 
   flexible_time_window {
     mode = "OFF"

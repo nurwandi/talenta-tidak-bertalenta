@@ -1,6 +1,7 @@
 variable "aws_region" {
-  type    = string
-  default = "ap-southeast-3"
+  type        = string
+  description = "AWS region for all resources (Jakarta, for an Indonesian outbound IP)."
+  default     = "ap-southeast-3"
 }
 
 variable "image_tag" {
@@ -10,21 +11,25 @@ variable "image_tag" {
 }
 
 variable "talenta_email" {
-  type      = string
-  sensitive = true
+  type        = string
+  description = "Talenta HR login email (set as an HCP sensitive workspace variable)."
+  sensitive   = true
 }
 
 variable "talenta_password" {
-  type      = string
-  sensitive = true
+  type        = string
+  description = "Talenta HR login password (set as an HCP sensitive workspace variable)."
+  sensitive   = true
 }
 
 variable "discord_webhook_url" {
-  type      = string
-  sensitive = true
+  type        = string
+  description = "Discord webhook URL for success/failure notifications (HCP sensitive var)."
+  sensitive   = true
 }
 
 variable "discord_user_id" {
-  type    = string
-  default = "710595837067264082"
+  type        = string
+  description = "Discord user ID to @mention in notifications."
+  default     = "710595837067264082"
 }
