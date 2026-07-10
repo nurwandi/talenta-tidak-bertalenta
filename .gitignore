@@ -1,0 +1,8 @@
+docs/
+.superpowers/
+node_modules/
+.env
+*.png
+terraform/.terraform/
+terraform/*.tfstate*
+terraform/.terraform.lock.hcl
