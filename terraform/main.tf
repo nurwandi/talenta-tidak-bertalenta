@@ -99,6 +99,16 @@ resource "aws_cloudwatch_log_group" "lambda" {
   tags              = { Resource = "lambda" }
 }
 
+# EventBridge Scheduler invokes async; on failure Lambda retries 2× (3 runs) by
+# default → triple clock attempts + triple Discord spam. The handler already
+# retries internally 3×, so kill the async retries.
+resource "aws_lambda_function_event_invoke_config" "clock" {
+  for_each                     = aws_lambda_function.clock
+  function_name                = each.value.function_name
+  maximum_retry_attempts       = 0
+  maximum_event_age_in_seconds = 300
+}
+
 # --- EventBridge Scheduler invoke role ---
 data "aws_iam_policy_document" "scheduler_assume" {
   statement {
