@@ -1,5 +1,3 @@
-data "aws_caller_identity" "current" {}
-
 locals {
   name  = "talenta-tidak-bertalenta"
   image = "${data.aws_ecr_repository.this.repository_url}:${var.image_tag}"
