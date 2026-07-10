@@ -1,0 +1,13 @@
+{
+  "name": "talenta-tidak-bertalenta",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Talenta attendance automation on AWS Lambda",
+  "scripts": {
+    "smoke": "node smoke.js"
+  },
+  "dependencies": {
+    "consola": "^3.4.2",
+    "playwright": "^1.60.0"
+  }
+}
