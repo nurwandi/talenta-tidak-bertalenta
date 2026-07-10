@@ -21,7 +21,9 @@ aws ecr describe-repositories --repository-names "$REPO" --region "$REGION" >/de
 aws ecr get-login-password --region "$REGION" \
   | docker login --username AWS --password-stdin "$ECR"
 
-docker build --platform linux/amd64 -t "${REPO}:${TAG}" .
+# --provenance=false: skip buildx attestation manifests so each push is a single
+# image (keeps the ECR repo clean and the keep-2 lifecycle policy predictable).
+docker build --provenance=false --platform linux/amd64 -t "${REPO}:${TAG}" .
 docker tag "${REPO}:${TAG}" "${ECR}/${REPO}:${TAG}"
 docker push "${ECR}/${REPO}:${TAG}"
 
