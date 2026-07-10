@@ -5,8 +5,6 @@ set -euo pipefail
 # QEMU emulation. If that happens, build via a native amd64 VM (e.g. colima with an
 # x86_64 profile) or a `docker buildx` builder configured for linux/amd64.
 
-export AWS_PROFILE="obi-sandbox"
-
 TAG="${1:?usage: ./build-push.sh <tag, e.g. v1>}"
 REGION="ap-southeast-3"
 REPO="talenta-tidak-bertalenta"
