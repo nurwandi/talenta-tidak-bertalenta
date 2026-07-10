@@ -130,10 +130,17 @@ resource "aws_iam_role_policy" "scheduler_invoke" {
   })
 }
 
-# --- Schedules (cron in Asia/Jakarta; aws_scheduler_schedule has no tags arg) ---
+# --- Schedule group (taggable, unlike individual schedules; keeps them out of `default`) ---
+resource "aws_scheduler_schedule_group" "this" {
+  name = local.name
+  tags = { Resource = "eventbridge" }
+}
+
+# --- Schedules (cron in Asia/Jakarta; aws_scheduler_schedule itself has no tags arg) ---
 resource "aws_scheduler_schedule" "clock_in" {
   name        = "${local.name}-sched-in"
   description = "Trigger Talenta clock-in at 09:00 WIB, Monday-Friday"
+  group_name  = aws_scheduler_schedule_group.this.name
 
   flexible_time_window {
     mode = "OFF"
@@ -152,6 +159,7 @@ resource "aws_scheduler_schedule" "clock_in" {
 resource "aws_scheduler_schedule" "clock_out" {
   name        = "${local.name}-sched-out"
   description = "Trigger Talenta clock-out at 18:00 WIB, Monday-Friday"
+  group_name  = aws_scheduler_schedule_group.this.name
 
   flexible_time_window {
     mode = "OFF"
