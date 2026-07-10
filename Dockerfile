@@ -9,6 +9,9 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 WORKDIR /var/task
 
 COPY package.json ./
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake g++ make libcurl4-openssl-dev python3 autoconf automake libtool xz-utils \
+    && rm -rf /var/lib/apt/lists/*
 RUN npm install --omit=dev && npm install aws-lambda-ric
 
 COPY src/ ./src/
