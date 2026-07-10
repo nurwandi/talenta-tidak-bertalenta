@@ -44,10 +44,11 @@ async function notifyDiscord({ action, success, geo, elapsedSec, shot }) {
     embeds: [embed],
   };
 
-  if (!success && shot) {
+  if (shot) {
     const form = new FormData();
     form.append('payload_json', JSON.stringify(payload));
-    form.append('files[0]', new Blob([shot], { type: 'image/png' }), 'error.png');
+    const filename = success ? 'clocked-in.png' : 'error.png';
+    form.append('files[0]', new Blob([shot], { type: 'image/png' }), filename);
     await fetch(url, { method: 'POST', body: form });
   } else {
     await fetch(url, {
@@ -77,9 +78,8 @@ export async function handler(event) {
   } catch (error) {
     log.error(`Fatal error: ${error.message}`);
   }
-  if (!success) {
-    try { shot = await page.screenshot(); } catch { /* page may be gone */ }
-  }
+  // Screenshot on both success (proof of attendance) and failure (debugging).
+  try { shot = await page.screenshot(); } catch { /* page may be gone */ }
   try { await logout(page, log); } catch { /* best effort */ }
   await browser.close();
 
