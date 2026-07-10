@@ -6,3 +6,4 @@ node_modules/
 terraform/.terraform/
 terraform/*.tfstate*
 terraform/.terraform.lock.hcl
+.DS_Store
