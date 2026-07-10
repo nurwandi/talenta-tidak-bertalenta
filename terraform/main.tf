@@ -80,6 +80,14 @@ resource "aws_lambda_function" "clock" {
     variables = local.lambda_env
   }
 
+  # Mirrors the Dockerfile's ENTRYPOINT/CMD/WORKDIR exactly (no behavior change) —
+  # setting it explicitly stops the AWS console's "Cannot read ... 'ImageConfig'" error.
+  image_config {
+    entry_point       = ["npx", "aws-lambda-ric"]
+    command           = ["handler.handler"]
+    working_directory = "/var/task"
+  }
+
   tags = { Resource = "lambda" }
 }
 
