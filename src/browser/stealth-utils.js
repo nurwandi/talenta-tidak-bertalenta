@@ -20,6 +20,9 @@ export async function launchStealthBrowser() {
       '--disable-features=IsolateOrigins,site-per-process',
       '--no-sandbox',
       '--disable-setuid-sandbox',
+      // Lambda has a tiny /dev/shm (64MB); without this Chromium crashes on newPage.
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
       '--disable-infobars',
       '--disable-webrtc',
       '--enforce-webrtc-ip-permission-check',

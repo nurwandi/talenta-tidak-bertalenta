@@ -71,6 +71,11 @@ resource "aws_lambda_function" "clock" {
   memory_size   = 2048
   timeout       = 120
 
+  # Chromium writes shared memory to /tmp (via --disable-dev-shm-usage); give it room.
+  ephemeral_storage {
+    size = 2048
+  }
+
   environment {
     variables = local.lambda_env
   }
