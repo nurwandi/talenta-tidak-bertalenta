@@ -122,7 +122,7 @@ resource "aws_scheduler_schedule" "clock_in" {
     mode = "OFF"
   }
 
-  schedule_expression          = "cron(0 8 ? * MON-FRI *)"
+  schedule_expression          = "cron(0 9 ? * MON-FRI *)"
   schedule_expression_timezone = "Asia/Jakarta"
 
   target {
