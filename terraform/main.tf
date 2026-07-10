@@ -2,7 +2,7 @@ data "aws_caller_identity" "current" {}
 
 locals {
   name  = "talenta-tidak-bertalenta"
-  image = "${aws_ecr_repository.this.repository_url}:${var.image_tag}"
+  image = "${data.aws_ecr_repository.this.repository_url}:${var.image_tag}"
 
   lambda_env = {
     TALENTA_EMAIL       = var.talenta_email
@@ -15,12 +15,26 @@ locals {
   }
 }
 
-# --- ECR ---
-resource "aws_ecr_repository" "this" {
-  name                 = local.name
-  image_tag_mutability = "IMMUTABLE"
-  force_delete         = true
-  tags                 = { Resource = "ecr" }
+# --- ECR (repo created out-of-band by build-push.sh; read-only here) ---
+data "aws_ecr_repository" "this" {
+  name = local.name
+}
+
+# Keep only the last 2 images (retention managed in Terraform for consistency).
+resource "aws_ecr_lifecycle_policy" "this" {
+  repository = data.aws_ecr_repository.this.name
+  policy = jsonencode({
+    rules = [{
+      rulePriority = 1
+      description  = "Keep only the last 2 images"
+      selection = {
+        tagStatus   = "any"
+        countType   = "imageCountMoreThan"
+        countNumber = 2
+      }
+      action = { type = "expire" }
+    }]
+  })
 }
 
 # --- Lambda execution role (shared by both functions) ---
