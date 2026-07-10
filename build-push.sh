@@ -15,7 +15,7 @@ ECR="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
 # Create the ECR repo if it doesn't exist yet (Terraform reads it as a data source).
 aws ecr describe-repositories --repository-names "$REPO" --region "$REGION" >/dev/null 2>&1 || \
   aws ecr create-repository --repository-name "$REPO" --region "$REGION" \
-    --image-tag-mutability IMMUTABLE \
+    --image-tag-mutability MUTABLE \
     --tags Key=Project,Value="$REPO" Key=Resource,Value=ecr >/dev/null
 
 aws ecr get-login-password --region "$REGION" \

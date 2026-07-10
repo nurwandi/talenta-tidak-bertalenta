@@ -23,6 +23,10 @@ export async function launchStealthBrowser() {
       // Lambda has a tiny /dev/shm (64MB); without this Chromium crashes on newPage.
       '--disable-dev-shm-usage',
       '--disable-gpu',
+      // Lambda constrains processes/threads; run Chromium in one process or it
+      // dies spawning a renderer for the first page ("Target closed" on newPage).
+      '--single-process',
+      '--no-zygote',
       '--disable-infobars',
       '--disable-webrtc',
       '--enforce-webrtc-ip-permission-check',
