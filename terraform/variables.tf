@@ -33,3 +33,8 @@ variable "discord_user_id" {
   description = "Discord user ID to @mention in notifications."
   default     = "710595837067264082"
 }
+
+variable "alarm_email" {
+  type        = string
+  description = "Email that gets a CloudWatch alarm when a scheduled run errors (set in HCP; not committed)."
+}

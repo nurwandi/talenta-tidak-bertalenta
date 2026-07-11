@@ -184,3 +184,36 @@ resource "aws_scheduler_schedule" "clock_out" {
     input    = jsonencode({ action = "clock-out" })
   }
 }
+
+# --- Failure alarm: email when a scheduled run errors. Fires off the platform
+#     `Errors` metric, independent of the handler's Discord notify — so it also
+#     catches silent failures (launch crash, timeout) the Discord path misses.
+#     Only alarm_actions is set → email on failure only, never on success/recovery.
+resource "aws_sns_topic" "alarms" {
+  name = "${local.name}-alarms"
+  tags = { Resource = "sns" }
+}
+
+resource "aws_sns_topic_subscription" "alarm_email" {
+  topic_arn = aws_sns_topic.alarms.arn
+  protocol  = "email"
+  endpoint  = var.alarm_email
+}
+
+resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
+  for_each = aws_lambda_function.clock
+
+  alarm_name          = "${each.value.function_name}-errors"
+  alarm_description   = "A ${each.key} run errored — attendance may not have been recorded."
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  dimensions          = { FunctionName = each.value.function_name }
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alarms.arn]
+  tags                = { Resource = "cloudwatch" }
+}
