@@ -123,6 +123,33 @@ AWS_PROFILE=<profile> aws lambda invoke \
 
 Success → `{"ok":true}` + a Discord ping. On failure, the error screenshot gets attached to the Discord message so you can see exactly where it faceplanted.
 
+## Pausing it (holidays, leave, sick days)
+
+The bot doesn't know about public holidays or your approved leave — so when you're
+off, flip the **manual kill switch**. It disables *both* schedules (clock-in and
+clock-out), so nothing fires:
+
+```bash
+./toggle.sh off    # before a holiday / leave — the bot goes quiet
+./toggle.sh on     # back to work — schedules resume
+```
+
+Check current state:
+
+```bash
+aws scheduler get-schedule --name talenta-tidak-bertalenta-sched-in \
+  --group-name talenta-tidak-bertalenta --region ap-southeast-3 \
+  --query State --output text        # ENABLED or DISABLED
+```
+
+Needs the `aws` CLI + [`jq`](https://jqlang.github.io/jq/). Uses `AWS_PROFILE`
+(defaults to `obi-sandbox`; override with `AWS_PROFILE=<profile> ./toggle.sh off`).
+
+> It's manual on purpose — 100% certainty over clever auto-detection. The catch:
+> **remember to `toggle.sh on` when you're back**, or you'll silently skip real
+> workdays. The schedules carry `lifecycle { ignore_changes = [state] }` in
+> Terraform, so your toggle survives the next `terraform apply`.
+
 ## Updating the image (after code changes)
 
 Tags are **mutable**, so just overwrite and repoint (no HCP fiddling required):
@@ -162,6 +189,7 @@ src/browser/stealth-utils.js # launch stealth Chromium (anti-detection) + humanC
 src/core/logger.js
 Dockerfile              # MS Playwright base + aws-lambda-ric
 build-push.sh           # build + push image to ECR (local)
+toggle.sh               # manual kill switch: enable/disable both schedules
 terraform/              # infra: ECR (data source), 2× Lambda, IAM, 2× schedule
 ```
 

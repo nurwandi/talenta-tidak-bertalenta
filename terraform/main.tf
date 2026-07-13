@@ -152,6 +152,13 @@ resource "aws_scheduler_schedule" "clock_in" {
   description = "Trigger Talenta clock-in at 09:00 WIB, Monday-Friday"
   group_name  = aws_scheduler_schedule_group.this.name
 
+  # Manual kill switch: flip to DISABLED with ./toggle.sh off before a holiday/leave.
+  # ignore_changes keeps that manual toggle from being reverted on the next apply.
+  state = "ENABLED"
+  lifecycle {
+    ignore_changes = [state]
+  }
+
   flexible_time_window {
     mode = "OFF"
   }
@@ -170,6 +177,12 @@ resource "aws_scheduler_schedule" "clock_out" {
   name        = "${local.name}-sched-out"
   description = "Trigger Talenta clock-out at 18:00 WIB, Monday-Friday"
   group_name  = aws_scheduler_schedule_group.this.name
+
+  # Manual kill switch — see clock_in above.
+  state = "ENABLED"
+  lifecycle {
+    ignore_changes = [state]
+  }
 
   flexible_time_window {
     mode = "OFF"
