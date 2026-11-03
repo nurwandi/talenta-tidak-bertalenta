@@ -5,14 +5,8 @@ import { createLogger } from './src/core/logger.js';
 
 const log = createLogger('HANDLER');
 
-// Day-of-week geolocation, evaluated in Asia/Jakarta. Schedules only fire Mon-Fri.
-function geoForToday() {
-  const dow = new Date().toLocaleDateString('en-US', { weekday: 'short', timeZone: 'Asia/Jakarta' });
-  if (dow === 'Mon' || dow === 'Fri') {
-    return { lat: '-6.2118931', lng: '106.8264782', label: 'Home (Mon/Fri)' };
-  }
-  return { lat: '-6.1993335', lng: '106.7623687', label: 'Default Office (Tue-Thu)' };
-}
+// Fixed geolocation. Schedules only fire Mon-Fri.
+const GEO = { lat: '-6.2342513', lng: '106.8241303', label: 'Office (Mon-Fri)' };
 
 function nowWIB() {
   return new Date().toLocaleString('id-ID', {
@@ -65,7 +59,7 @@ export async function handler(event) {
     throw new Error(`invalid action: ${JSON.stringify(action)}`);
   }
   const start = Date.now();
-  const geo = geoForToday();
+  const geo = GEO;
   process.env.GEO_LAT = geo.lat;
   process.env.GEO_LNG = geo.lng;
 
