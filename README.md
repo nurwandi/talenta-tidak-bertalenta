@@ -68,9 +68,7 @@ cd talenta-tidak-bertalenta
 
 ### 2. Tweak the config
 
-- **Geolocation** — edit `geoForToday()` in `handler.js`. Defaults:
-  - Mon/Fri → `-6.2118931, 106.8264782` (home)
-  - Tue–Thu → `-6.1993335, 106.7623687` (office)
+- **Geolocation** — edit `GEO` in `handler.js`.
 
   Swap in your own coordinates (grab them from Google Maps).
 - **Schedule** — crons live in `terraform/main.tf` (`aws_scheduler_schedule`). Defaults: clock-in `cron(0 9 ? * MON-FRI *)`, clock-out `cron(0 18 ...)`, timezone `Asia/Jakarta`.
@@ -107,7 +105,7 @@ AWS_PROFILE=<your-profile> ./build-push.sh v1
 
 Push to `main` → HCP kicks off a plan → **approve the apply** in the HCP UI.
 
-Resources created: 2 Lambdas (clock-in/out), 2 IAM roles, 2 EventBridge schedules, 2 log groups, 1 ECR lifecycle policy (keeps the last 2 images).
+Resources created: 2 Lambdas (clock-in/out), 2 IAM roles, 2 EventBridge schedules, 2 log groups, 1 ECR lifecycle policy (keeps the last image).
 
 ### 6. Test it (manually)
 

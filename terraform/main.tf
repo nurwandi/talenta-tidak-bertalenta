@@ -18,17 +18,17 @@ data "aws_ecr_repository" "this" {
   name = local.name
 }
 
-# Keep only the last 2 images (retention managed in Terraform for consistency).
+# Keep only the last image (retention managed in Terraform for consistency).
 resource "aws_ecr_lifecycle_policy" "this" {
   repository = data.aws_ecr_repository.this.name
   policy = jsonencode({
     rules = [{
       rulePriority = 1
-      description  = "Keep only the last 2 images"
+      description  = "Keep only the last image"
       selection = {
         tagStatus   = "any"
         countType   = "imageCountMoreThan"
-        countNumber = 2
+        countNumber = 1
       }
       action = { type = "expire" }
     }]
