@@ -149,7 +149,7 @@ resource "aws_scheduler_schedule_group" "this" {
 # --- Schedules (cron in Asia/Jakarta; aws_scheduler_schedule itself has no tags arg) ---
 resource "aws_scheduler_schedule" "clock_in" {
   name        = "${local.name}-sched-in"
-  description = "Trigger Talenta clock-in at 09:00 WIB, Monday-Friday"
+  description = "Trigger Talenta clock-in between 09:00-09:30 WIB, Monday-Friday"
   group_name  = aws_scheduler_schedule_group.this.name
 
   # Manual kill switch: flip to DISABLED with ./toggle.sh off before a holiday/leave.
@@ -159,8 +159,10 @@ resource "aws_scheduler_schedule" "clock_in" {
     ignore_changes = [state]
   }
 
+  # Fires within 30 min AFTER the cron time, so attendance isn't on the exact hour.
   flexible_time_window {
-    mode = "OFF"
+    mode                      = "FLEXIBLE"
+    maximum_window_in_minutes = 30
   }
 
   schedule_expression          = "cron(0 9 ? * MON-FRI *)"
@@ -175,7 +177,7 @@ resource "aws_scheduler_schedule" "clock_in" {
 
 resource "aws_scheduler_schedule" "clock_out" {
   name        = "${local.name}-sched-out"
-  description = "Trigger Talenta clock-out at 18:00 WIB, Monday-Friday"
+  description = "Trigger Talenta clock-out between 18:00-18:30 WIB, Monday-Friday"
   group_name  = aws_scheduler_schedule_group.this.name
 
   # Manual kill switch — see clock_in above.
@@ -184,8 +186,10 @@ resource "aws_scheduler_schedule" "clock_out" {
     ignore_changes = [state]
   }
 
+  # Fires within 30 min AFTER the cron time, so attendance isn't on the exact hour.
   flexible_time_window {
-    mode = "OFF"
+    mode                      = "FLEXIBLE"
+    maximum_window_in_minutes = 30
   }
 
   schedule_expression          = "cron(0 18 ? * MON-FRI *)"
