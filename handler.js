@@ -6,7 +6,7 @@ import { createLogger } from './src/core/logger.js';
 const log = createLogger('HANDLER');
 
 // Fixed geolocation. Schedules only fire Mon-Fri.
-const GEO = { lat: '-6.2342513', lng: '106.8241303', label: 'Office (Mon-Fri)' };
+const GEO = { lat: '-6.2249462', lng: '106.8145192', label: 'Office (Mon-Fri)' };
 
 function nowWIB() {
   return new Date().toLocaleString('id-ID', {
