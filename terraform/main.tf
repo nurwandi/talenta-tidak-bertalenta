@@ -99,14 +99,86 @@ resource "aws_cloudwatch_log_group" "lambda" {
   tags              = { Resource = "lambda" }
 }
 
-# EventBridge Scheduler invokes async; on failure Lambda retries 2× (3 runs) by
-# default → triple clock attempts + triple Discord spam. The handler already
-# retries internally 3×, so kill the async retries.
-resource "aws_lambda_function_event_invoke_config" "clock" {
-  for_each                     = aws_lambda_function.clock
-  function_name                = each.value.function_name
-  maximum_retry_attempts       = 0
-  maximum_event_age_in_seconds = 300
+# --- Random delay: Step Functions acts as a free "sleep" in front of Lambda ---
+# Scheduler's flexible window picks a FIXED offset per schedule (observed: clock-in
+# always 09:05:37, clock-out always 18:23:44), not a new random one each day.
+# A Standard state machine Wait is free while waiting and has no 15-min cap, so:
+# random 0-1800s -> Wait -> invoke Lambda synchronously.
+data "aws_iam_policy_document" "sfn_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["states.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "sfn" {
+  name               = "${local.name}-sfn-role"
+  description        = "Role assumed by the random-delay state machine to invoke the attendance Lambda functions"
+  assume_role_policy = data.aws_iam_policy_document.sfn_assume.json
+  tags               = { Resource = "iam" }
+}
+
+resource "aws_iam_role_policy" "sfn_invoke" {
+  name = "${local.name}-sfn-invoke"
+  role = aws_iam_role.sfn.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "lambda:InvokeFunction"
+      Resource = [for f in aws_lambda_function.clock : f.arn]
+    }]
+  })
+}
+
+resource "aws_sfn_state_machine" "clock" {
+  name     = "${local.name}-clock"
+  role_arn = aws_iam_role.sfn.arn
+  type     = "STANDARD" # Express bills duration and caps at 5 min — Standard bills per transition only
+
+  definition = jsonencode({
+    Comment = "Wait a random 0-30 min, then run clock-in/clock-out"
+    StartAt = "PickDelay"
+    States = {
+      PickDelay = {
+        Type = "Pass"
+        Parameters = {
+          "action.$" = "$.action"
+          "delay.$"  = "States.MathRandom(0, 1800)"
+        }
+        Next = "RandomWait"
+      }
+      RandomWait = {
+        Type        = "Wait"
+        SecondsPath = "$.delay"
+        Next        = "Clock"
+      }
+      Clock = {
+        Type     = "Task"
+        Resource = "arn:aws:states:::lambda:invoke"
+        Parameters = {
+          "FunctionName.$" = "States.Format('${local.name}-{}', $.action)"
+          "Payload" = {
+            "action.$" = "$.action"
+          }
+        }
+        # Only retry Lambda-service hiccups (function never ran). Handler errors are
+        # NOT retried — the handler already retries 3x internally; a rerun = double clock.
+        Retry = [{
+          ErrorEquals     = ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"]
+          IntervalSeconds = 5
+          MaxAttempts     = 2
+          BackoffRate     = 2
+        }]
+        End = true
+      }
+    }
+  })
+
+  tags = { Resource = "stepfunctions" }
 }
 
 # --- EventBridge Scheduler invoke role ---
@@ -122,7 +194,7 @@ data "aws_iam_policy_document" "scheduler_assume" {
 
 resource "aws_iam_role" "scheduler" {
   name               = "${local.name}-scheduler-role"
-  description        = "Role assumed by EventBridge Scheduler to invoke the attendance Lambda functions"
+  description        = "Role assumed by EventBridge Scheduler to start the random-delay state machine"
   assume_role_policy = data.aws_iam_policy_document.scheduler_assume.json
   tags               = { Resource = "iam" }
 }
@@ -134,8 +206,8 @@ resource "aws_iam_role_policy" "scheduler_invoke" {
     Version = "2012-10-17"
     Statement = [{
       Effect   = "Allow"
-      Action   = "lambda:InvokeFunction"
-      Resource = [for f in aws_lambda_function.clock : f.arn]
+      Action   = "states:StartExecution"
+      Resource = aws_sfn_state_machine.clock.arn
     }]
   })
 }
@@ -159,17 +231,16 @@ resource "aws_scheduler_schedule" "clock_in" {
     ignore_changes = [state]
   }
 
-  # Fires within 30 min AFTER the cron time, so attendance isn't on the exact hour.
+  # Fires exactly on the cron time; the 0-30 min randomness comes from the state machine.
   flexible_time_window {
-    mode                      = "FLEXIBLE"
-    maximum_window_in_minutes = 30
+    mode = "OFF"
   }
 
   schedule_expression          = "cron(0 9 ? * MON-FRI *)"
   schedule_expression_timezone = "Asia/Jakarta"
 
   target {
-    arn      = aws_lambda_function.clock["clock-in"].arn
+    arn      = aws_sfn_state_machine.clock.arn
     role_arn = aws_iam_role.scheduler.arn
     input    = jsonencode({ action = "clock-in" })
   }
@@ -186,17 +257,16 @@ resource "aws_scheduler_schedule" "clock_out" {
     ignore_changes = [state]
   }
 
-  # Fires within 30 min AFTER the cron time, so attendance isn't on the exact hour.
+  # Fires exactly on the cron time; the 0-30 min randomness comes from the state machine.
   flexible_time_window {
-    mode                      = "FLEXIBLE"
-    maximum_window_in_minutes = 30
+    mode = "OFF"
   }
 
   schedule_expression          = "cron(0 18 ? * MON-FRI *)"
   schedule_expression_timezone = "Asia/Jakarta"
 
   target {
-    arn      = aws_lambda_function.clock["clock-out"].arn
+    arn      = aws_sfn_state_machine.clock.arn
     role_arn = aws_iam_role.scheduler.arn
     input    = jsonencode({ action = "clock-out" })
   }
